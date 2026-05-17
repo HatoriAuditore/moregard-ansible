@@ -1,0 +1,7 @@
+.cache/
+ansible-extra-vars.json
+*.retry
+
+# Keep only placeholder CA material in git
+roles/root_ca/files/*
+!roles/root_ca/files/.gitkeep

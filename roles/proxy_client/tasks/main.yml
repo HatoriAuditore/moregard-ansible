@@ -1,0 +1,28 @@
+---
+- name: Ensure proxy environment directory exists
+  ansible.builtin.file:
+    path: /etc/profile.d
+    state: directory
+    mode: "0755"
+
+- name: Configure system-wide proxy environment
+  ansible.builtin.copy:
+    dest: /etc/profile.d/proxy.sh
+    mode: "0644"
+    content: |
+      export HTTP_PROXY={{ proxy_http_url }}
+      export HTTPS_PROXY={{ proxy_https_url | default(proxy_http_url) }}
+      export NO_PROXY={{ proxy_no_proxy | default('127.0.0.1,localhost') }}
+      export http_proxy={{ proxy_http_url }}
+      export https_proxy={{ proxy_https_url | default(proxy_http_url) }}
+      export no_proxy={{ proxy_no_proxy | default('127.0.0.1,localhost') }}
+  when: proxy_http_url is defined and proxy_http_url | length > 0
+
+- name: Configure dnf proxy when enabled
+  ansible.builtin.ini_file:
+    path: /etc/dnf/dnf.conf
+    section: main
+    option: proxy
+    value: "{{ proxy_http_url }}"
+    mode: "0644"
+  when: proxy_http_url is defined and proxy_http_url | length > 0

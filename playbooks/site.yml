@@ -1,0 +1,14 @@
+---
+- import_playbook: bootstrap_linux.yml
+
+- name: Apply optional service profiles after bootstrap
+  hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - role: nginx
+      when: "'nginx' in (vm_service_profiles | default([]))"
+    - role: ftp_server
+      when: "'ftp_server' in (vm_service_profiles | default([])) or 'ftp' in (vm_service_profiles | default([]))"
+    - role: tomcat
+      when: "'tomcat' in (vm_service_profiles | default([]))"

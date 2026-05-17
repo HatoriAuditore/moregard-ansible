@@ -1,0 +1,22 @@
+---
+tomcat_version: "10.1.57"
+tomcat_user: tomcat
+tomcat_group: tomcat
+tomcat_install_dir: /opt/tomcat
+tomcat_home: "{{ tomcat_install_dir }}/current"
+tomcat_service_name: tomcat
+tomcat_java_package: temurin-21-jdk
+tomcat_java_home: /usr/lib/jvm/temurin-21-jdk
+tomcat_validate_certs: true
+tomcat_archive_name: "apache-tomcat-{{ tomcat_version }}.tar.gz"
+tomcat_download_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v{{ tomcat_version }}/bin/{{ tomcat_archive_name }}"
+tomcat_download_dest: "/tmp/{{ tomcat_archive_name }}"
+temurin_distribution_name: rhel
+temurin_repo_name: Adoptium
+temurin_repo_baseurl: "https://packages.adoptium.net/artifactory/rpm/{{ temurin_distribution_name }}/$releasever/$basearch"
+temurin_repo_gpgkey: https://packages.adoptium.net/artifactory/api/gpg/key/public
+tomcat_http_port: 8080
+tomcat_shutdown_port: 8005
+tomcat_ajp_port: 8009
+tomcat_bind_address: 0.0.0.0
+tomcat_catalina_opts: "-Djava.security.egd=file:/dev/./urandom"

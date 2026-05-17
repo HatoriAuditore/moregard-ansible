@@ -1,0 +1,38 @@
+---
+- name: Ensure timezone is configured when provided
+  ansible.builtin.command: "timedatectl set-timezone {{ system_timezone }}"
+  when: system_timezone is defined and system_timezone | length > 0
+  changed_when: true
+
+- name: Ensure system hostname is configured when provided
+  ansible.builtin.command: "hostnamectl set-hostname {{ vm_fqdn }}"
+  when: vm_fqdn is defined and vm_fqdn | length > 0
+  changed_when: true
+
+- name: Configure NTP server
+  ansible.builtin.blockinfile:
+    path: "{{ ntp_config_file }}"
+    marker: "# {mark} ANSIBLE MANAGED NTP"
+    block: |
+      server {{ ntp_server }} iburst
+  when:
+    - ntp_enabled | default(false)
+    - ntp_server is defined
+    - ntp_server | length > 0
+
+- name: Ensure NTP service is enabled and running
+  ansible.builtin.service:
+    name: "{{ ntp_service }}"
+    enabled: true
+    state: restarted
+  when: ntp_enabled | default(false)
+
+- name: Ensure bootstrap users are present
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    groups: "{{ item.groups | default(omit) }}"
+    append: true
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: "{{ item.create_home | default(true) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ bootstrap_users | default([]) }}"

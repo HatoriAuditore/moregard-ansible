@@ -1,0 +1,108 @@
+---
+- name: Configure Adoptium RPM repository for Temurin packages
+  ansible.builtin.yum_repository:
+    name: adoptium
+    description: "{{ temurin_repo_name }}"
+    baseurl: "{{ temurin_repo_baseurl }}"
+    enabled: true
+    gpgcheck: true
+    gpgkey: "{{ temurin_repo_gpgkey }}"
+
+- name: Install Java runtime and archive utilities
+  ansible.builtin.dnf:
+    name:
+      - "{{ tomcat_java_package }}"
+      - tar
+    state: present
+
+- name: Ensure Tomcat group exists
+  ansible.builtin.group:
+    name: "{{ tomcat_group }}"
+    system: true
+
+- name: Ensure Tomcat user exists
+  ansible.builtin.user:
+    name: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    shell: /sbin/nologin
+    home: "{{ tomcat_install_dir }}"
+    create_home: false
+    system: true
+
+- name: Ensure Tomcat installation directory exists
+  ansible.builtin.file:
+    path: "{{ tomcat_install_dir }}"
+    state: directory
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: "0755"
+
+- name: Download Apache Tomcat archive
+  ansible.builtin.get_url:
+    url: "{{ tomcat_download_url }}"
+    dest: "{{ tomcat_download_dest }}"
+    mode: "0644"
+    validate_certs: "{{ tomcat_validate_certs }}"
+
+- name: Extract Apache Tomcat archive
+  ansible.builtin.unarchive:
+    src: "{{ tomcat_download_dest }}"
+    dest: "{{ tomcat_install_dir }}"
+    remote_src: true
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    creates: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}/bin/catalina.sh"
+
+- name: Point current Tomcat symlink to installed version
+  ansible.builtin.file:
+    src: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
+    dest: "{{ tomcat_home }}"
+    state: link
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+  notify: Restart Tomcat
+
+- name: Ensure Tomcat directories have correct ownership
+  ansible.builtin.file:
+    path: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
+    state: directory
+    recurse: true
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+
+- name: Configure Tomcat environment options
+  ansible.builtin.copy:
+    dest: "{{ tomcat_home }}/bin/setenv.sh"
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      export JAVA_HOME="{{ tomcat_java_home }}"
+      export CATALINA_HOME="{{ tomcat_home }}"
+      export CATALINA_BASE="{{ tomcat_home }}"
+      export CATALINA_OPTS="{{ tomcat_catalina_opts }}"
+  notify: Restart Tomcat
+
+- name: Configure Tomcat server ports and bind address
+  ansible.builtin.template:
+    src: server.xml.j2
+    dest: "{{ tomcat_home }}/conf/server.xml"
+    owner: "{{ tomcat_user }}"
+    group: "{{ tomcat_group }}"
+    mode: "0644"
+  notify: Restart Tomcat
+
+- name: Install Tomcat systemd unit
+  ansible.builtin.template:
+    src: tomcat.service.j2
+    dest: "/etc/systemd/system/{{ tomcat_service_name }}.service"
+    mode: "0644"
+  notify: Restart Tomcat
+
+- name: Enable and start Tomcat service
+  ansible.builtin.systemd:
+    name: "{{ tomcat_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true

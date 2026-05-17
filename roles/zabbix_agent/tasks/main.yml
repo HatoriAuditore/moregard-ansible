@@ -1,0 +1,46 @@
+---
+- name: Download Zabbix release package when URL is provided
+  ansible.builtin.get_url:
+    url: "{{ zabbix_release_rpm_url }}"
+    dest: "{{ zabbix_release_rpm_path }}"
+    mode: "0644"
+    validate_certs: "{{ zabbix_release_validate_certs | default(true) }}"
+  when: zabbix_release_rpm_url is defined and zabbix_release_rpm_url | length > 0
+
+- name: Install Zabbix release package when URL is provided
+  ansible.builtin.dnf:
+    name: "{{ zabbix_release_rpm_path }}"
+    state: present
+    disable_gpg_check: true
+  when: zabbix_release_rpm_url is defined and zabbix_release_rpm_url | length > 0
+
+- name: Install Zabbix agent package
+  ansible.builtin.dnf:
+    name: "{{ zabbix_agent_package }}"
+    state: present
+
+- name: Configure Zabbix server
+  ansible.builtin.lineinfile:
+    path: "{{ zabbix_agent_config_file }}"
+    regexp: "^Server="
+    line: "Server={{ zabbix_server }}"
+  when: zabbix_server is defined and zabbix_server | length > 0
+
+- name: Configure Zabbix active server
+  ansible.builtin.lineinfile:
+    path: "{{ zabbix_agent_config_file }}"
+    regexp: "^ServerActive="
+    line: "ServerActive={{ zabbix_server_active | default(zabbix_server) }}"
+  when: zabbix_server is defined and zabbix_server | length > 0
+
+- name: Configure Zabbix hostname
+  ansible.builtin.lineinfile:
+    path: "{{ zabbix_agent_config_file }}"
+    regexp: "^Hostname="
+    line: "Hostname={{ inventory_hostname }}"
+
+- name: Ensure Zabbix agent service is enabled and started
+  ansible.builtin.service:
+    name: "{{ zabbix_agent_service }}"
+    enabled: true
+    state: started

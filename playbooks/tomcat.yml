@@ -1,0 +1,7 @@
+---
+- name: Install Apache Tomcat on Rocky Linux hosts
+  hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - tomcat

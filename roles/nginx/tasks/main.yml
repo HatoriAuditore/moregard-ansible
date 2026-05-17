@@ -1,0 +1,22 @@
+---
+- name: Install nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Ensure nginx is enabled and running
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Publish default index page
+  ansible.builtin.copy:
+    dest: /usr/share/nginx/html/index.html
+    mode: "0644"
+    content: |
+      <html>
+      <body>
+      <h1>{{ inventory_hostname }} is managed by Ansible</h1>
+      </body>
+      </html>

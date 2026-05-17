@@ -1,0 +1,38 @@
+---
+ansible_become: true
+ansible_python_interpreter: /usr/bin/python3
+system_timezone: Europe/Tallinn
+
+proxy_enabled: true
+proxy_http_url: http://proxy.example.test:80
+proxy_https_url: http://proxy.example.test:80
+proxy_no_proxy: 127.0.0.1,localhost
+
+ntp_enabled: true
+ntp_server: ntp.example.test
+ntp_config_file: /etc/chrony.conf
+ntp_service: chronyd
+
+zabbix_agent_enabled: true
+zabbix_agent_package: zabbix-agent2
+zabbix_agent_config_file: /etc/zabbix/zabbix_agent2.conf
+zabbix_agent_service: zabbix-agent2
+zabbix_release_rpm_url: https://repo.example.test/zabbix/zabbix-agent2-release.el10.x86_64.rpm
+zabbix_release_rpm_path: /tmp/zabbix-agent2-release.rpm
+zabbix_release_validate_certs: false
+zabbix_server: zabbix.example.test
+zabbix_server_active: zabbix.example.test
+
+vm_service_profiles: []
+
+root_ca_enabled: false
+root_ca_filename: corporate-root-ca.crt
+root_ca_anchor_path: /etc/pki/ca-trust/source/anchors/corporate-root-ca.crt
+
+bootstrap_users:
+  - name: operator
+    groups:
+      - wheel
+    shell: /bin/bash
+    create_home: true
+    state: present

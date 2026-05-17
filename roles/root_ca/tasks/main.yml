@@ -1,0 +1,16 @@
+---
+- name: Ensure root CA anchors directory exists
+  ansible.builtin.file:
+    path: /etc/pki/ca-trust/source/anchors
+    state: directory
+    mode: "0755"
+
+- name: Install corporate root CA certificate
+  ansible.builtin.copy:
+    src: "{{ root_ca_filename }}"
+    dest: "{{ root_ca_anchor_path }}"
+    mode: "0644"
+
+- name: Update trusted CA store
+  ansible.builtin.command: update-ca-trust extract
+  changed_when: true

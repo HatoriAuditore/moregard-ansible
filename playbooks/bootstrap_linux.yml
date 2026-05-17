@@ -1,0 +1,40 @@
+---
+- name: Run mandatory bootstrap for newly provisioned Linux VM
+  hosts: all
+  gather_facts: false
+  become: true
+  pre_tasks:
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for_connection:
+        timeout: "{{ bootstrap_ssh_wait_timeout | default(300) }}"
+        sleep: "{{ bootstrap_ssh_wait_sleep | default(5) }}"
+        connect_timeout: "{{ bootstrap_ssh_connect_timeout | default(5) }}"
+
+    - name: Gather facts after SSH is ready
+      ansible.builtin.setup:
+  roles:
+    - role: proxy_client
+      when: proxy_enabled | default(false)
+    - role: common_base
+    - role: root_ca
+      when: root_ca_enabled | default(false)
+    - role: zabbix_agent
+      when: zabbix_agent_enabled | default(false)
+
+  tasks:
+    - name: Record requested service profiles
+      ansible.builtin.copy:
+        dest: /etc/vm-orchestrator-profiles.txt
+        content: |
+          profiles={{ vm_service_profiles | default([]) | join(',') }}
+        mode: "0644"
+
+    - name: Write bootstrap audit marker
+      ansible.builtin.copy:
+        dest: /etc/vm-orchestrator-bootstrap.txt
+        content: |
+          request_id={{ vm_request_id | default('manual') }}
+          vm_names={{ vm_names | default('') }}
+          requested_by={{ vm_requested_by | default('unknown') }}
+          bootstrap_playbook=bootstrap_linux.yml
+        mode: "0644"
